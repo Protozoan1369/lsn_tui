@@ -83,19 +83,36 @@ func main() {
 }
 
 func showServerList() {
+	// Create a flex layout
+	flex := tview.NewFlex().SetDirection(tview.FlexRow)
+
+	// Create a new flex for the title and total count
+	topFlex := tview.NewFlex().SetDirection(tview.FlexColumn)
+
+	// Add title to the left
+	title := tview.NewTextView().SetText("Server List").SetTextColor(tcell.ColorWhite)
+	topFlex.AddItem(title, 0, 1, false)
+
+	// Add total count to the right
+	totalCount := tview.NewTextView().SetText(fmt.Sprintf("Total Servers: %d", len(servers))).SetTextColor(tcell.ColorGreen).SetTextAlign(tview.AlignRight)
+	topFlex.AddItem(totalCount, 0, 1, false)
+
+	// Add the top flex to the main flex
+	flex.AddItem(topFlex, 1, 0, false)
+
+	// Create and populate the server table
 	serverTable = tview.NewTable().SetSelectable(true, false)
-	serverTable.SetBorder(true).SetTitle("Server List")
 
 	// Add headers
 	serverTable.SetCell(0, 0, tview.NewTableCell("ID").SetTextColor(tcell.ColorYellow).SetSelectable(false))
-	serverTable.SetCell(0, 1, tview.NewTableCell("Hostname").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	serverTable.SetCell(0, 1, tview.NewTableCell("name").SetTextColor(tcell.ColorYellow).SetSelectable(false))
 	serverTable.SetCell(0, 2, tview.NewTableCell("Public IP").SetTextColor(tcell.ColorYellow).SetSelectable(false))
 
 	// Add server data
 	for i, server := range servers {
 		publicIP := getPublicIP(server.IPSubnets)
 		serverTable.SetCell(i+1, 0, tview.NewTableCell(server.ServerID))
-		serverTable.SetCell(i+1, 1, tview.NewTableCell(server.Package.Hostname))
+		serverTable.SetCell(i+1, 1, tview.NewTableCell(server.Package.Name))
 		serverTable.SetCell(i+1, 2, tview.NewTableCell(publicIP))
 	}
 
@@ -104,12 +121,16 @@ func showServerList() {
 			app.Stop()
 		}
 	}).SetSelectedFunc(func(row int, column int) {
-		if row > 0 {
+		if row > 0 && row <= len(servers) {
 			showServerMenu(servers[row-1])
 		}
 	})
 
-	pages.AddPage("serverList", serverTable, true, true)
+	// Add the server table to the main flex
+	flex.AddItem(serverTable, 0, 1, true)
+
+	// Add the flex layout to the pages
+	pages.AddPage("serverList", flex, true, true)
 }
 
 func showServerMenu(server Server) {
