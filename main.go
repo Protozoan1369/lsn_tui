@@ -45,10 +45,11 @@ type Credentials struct {
 }
 
 var (
-	app        *tview.Application
-	pages      *tview.Pages
-	list       *tview.List
+	app         *tview.Application
+	pages       *tview.Pages
+	serverTable *tview.Table
 	credentials Credentials
+	servers     []Server
 )
 
 func main() {
@@ -70,6 +71,10 @@ func main() {
 	app = tview.NewApplication()
 	pages = tview.NewPages()
 
+	if err := fetchServers(); err != nil {
+		log.Fatalf("Error fetching servers: %v", err)
+	}
+
 	showServerList()
 
 	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
@@ -78,26 +83,33 @@ func main() {
 }
 
 func showServerList() {
-	list = tview.NewList().ShowSecondaryText(false)
-	list.SetBorder(true).SetTitle("Server List")
+	serverTable = tview.NewTable().SetSelectable(true, false)
+	serverTable.SetBorder(true).SetTitle("Server List")
 
-	servers, err := fetchServers()
-	if err != nil {
-		log.Fatalf("Error fetching servers: %v", err)
-	}
+	// Add headers
+	serverTable.SetCell(0, 0, tview.NewTableCell("ID").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	serverTable.SetCell(0, 1, tview.NewTableCell("Hostname").SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	serverTable.SetCell(0, 2, tview.NewTableCell("Public IP").SetTextColor(tcell.ColorYellow).SetSelectable(false))
 
-	for _, server := range servers {
+	// Add server data
+	for i, server := range servers {
 		publicIP := getPublicIP(server.IPSubnets)
-		list.AddItem(fmt.Sprintf("%s | %s | %s", server.ServerID, server.Package.Hostname, publicIP), "", 0, func() {
-			showServerMenu(server)
-		})
+		serverTable.SetCell(i+1, 0, tview.NewTableCell(server.ServerID))
+		serverTable.SetCell(i+1, 1, tview.NewTableCell(server.Package.Hostname))
+		serverTable.SetCell(i+1, 2, tview.NewTableCell(publicIP))
 	}
 
-	list.AddItem("Quit", "Press to exit", 'q', func() {
-		app.Stop()
+	serverTable.Select(1, 0).SetFixed(1, 0).SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEscape {
+			app.Stop()
+		}
+	}).SetSelectedFunc(func(row int, column int) {
+		if row > 0 {
+			showServerMenu(servers[row-1])
+		}
 	})
 
-	pages.AddPage("serverList", list, true, true)
+	pages.AddPage("serverList", serverTable, true, true)
 }
 
 func showServerMenu(server Server) {
@@ -148,26 +160,25 @@ func showServerDetails(server Server) {
 	pages.SwitchToPage("serverDetails")
 }
 
-func fetchServers() ([]Server, error) {
+func fetchServers() error {
 	client := resty.New()
 	resp, err := client.R().
 		SetBasicAuth(credentials.Username, credentials.Password).
 		Get("https://api.dallas-idc.com/v1/server")
 	if err != nil {
-		return nil, fmt.Errorf("error making request: %v", err)
+		return fmt.Errorf("error making request: %v", err)
 	}
 
 	if resp.StatusCode() != 200 {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode())
 	}
 
-	var servers []Server
 	err = json.Unmarshal(resp.Body(), &servers)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling response: %v", err)
+		return fmt.Errorf("error unmarshaling response: %v", err)
 	}
 
-	return servers, nil
+	return nil
 }
 
 func getItemOption(items []PackageItem, category string) string {

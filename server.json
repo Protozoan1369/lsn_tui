@@ -1,0 +1,133 @@
+[
+  {
+    "server_id": "LSN-D10069",
+    "facility": "TYO1",
+    "ip_subnets": [
+      {
+        "block": "74.63.207.36/30",
+        "network": "74.63.207.36",
+        "cidr": 30,
+        "netmask": "255.255.255.252",
+        "created_at": "2023-06-18T01:44:37-05:00",
+        "network_type": "public",
+        "assignment_type": null
+      },
+      {
+        "block": "10.37.0.36/30",
+        "network": "10.37.0.36",
+        "cidr": 30,
+        "netmask": "255.255.255.252",
+        "created_at": "2023-06-18T01:44:38-05:00",
+        "network_type": "private",
+        "assignment_type": null
+      }
+    ],
+    "ipmi_link": "https://10.36.8.18",
+    "management_ip": "74.63.207.38",
+    "package": {
+      "billing_interval": "monthly",
+      "client_id": 456405,
+      "core": "AMD EPYC 7443",
+      "create_date": "2023-06-13 14:44:03",
+      "discount": 264,
+      "hostname": "",
+      "items": [
+        {
+          "category": "Bandwidth",
+          "option": "100000GB",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "Uplink Port Speed",
+          "option": "25gbps",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "DDoS Protection",
+          "option": "Basic DDoS Protection (up to 5Gbps)",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "Bare-metal Backup",
+          "option": "None",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "Control Panel",
+          "option": "None",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "Update Manager",
+          "option": "None",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "CRM Software",
+          "option": "None",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "Database Software",
+          "option": "None",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "IP Addresses",
+          "option": "4 IPs (1 Usable)",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "Network Attached Storage",
+          "option": "20gb NAS",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "KVM Over IP",
+          "option": "IPMI 2.0 with integrated KVM over IP",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "Support Level",
+          "option": "Unmanaged Support",
+          "created_at": "2022-04-25 15:32:08"
+        },
+        {
+          "category": "Processor",
+          "option": "AMD EPYC 7443P (24 Cores / 48 Threads)",
+          "created_at": "2022-04-25 15:33:12"
+        },
+        {
+          "category": "Hard Drive",
+          "option": "7.68TB SSD",
+          "created_at": "2022-07-13 15:30:21"
+        },
+        {
+          "category": "Hard Drive",
+          "option": "7.68TB SSD",
+          "created_at": "2022-07-13 15:30:21"
+        },
+        {
+          "category": "RAM",
+          "option": "1TB DDR4 ECC",
+          "created_at": "2023-06-13 15:10:39"
+        },
+        {
+          "category": "Operating System",
+          "option": "Ubuntu 22.04 (Focal) - 64 Bit",
+          "created_at": "2023-06-13 15:11:57"
+        },
+        {
+          "category": "Facility",
+          "option": "Tokyo, JP (TYO1)",
+          "created_at": "2023-06-13 15:14:23"
+        }
+      ],
+      "name": "sol-mainnet-geyser-lsn-tyo-d10069",
+      "next_billing_date": "2035-01-01",
+      "price": 1216,
+      "status": "Online",
+      "tax": 0
+    }
+  }
+]
