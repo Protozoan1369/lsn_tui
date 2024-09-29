@@ -12,10 +12,31 @@ import (
 	"github.com/rivo/tview"
 )
 
+type IPSubnet struct {
+	Block       string `json:"block"`
+	NetworkType string `json:"network_type"`
+}
+
+type PackageItem struct {
+	Category string `json:"category"`
+	Option   string `json:"option"`
+}
+
+type Package struct {
+	ClientID int           `json:"client_id"`
+	Core     string        `json:"core"`
+	Hostname string        `json:"hostname"`
+	Items    []PackageItem `json:"items"`
+	Name     string        `json:"name"`
+	Status   string        `json:"status"`
+}
+
 type Server struct {
-	ID       string `json:"id"`
-	Hostname string `json:"hostname"`
-	Status   string `json:"status"`
+	ServerID     string    `json:"server_id"`
+	Facility     string    `json:"facility"`
+	IPSubnets    []IPSubnet `json:"ip_subnets"`
+	ManagementIP string    `json:"management_ip"`
+	Package      Package   `json:"package"`
 }
 
 type Credentials struct {
@@ -23,13 +44,13 @@ type Credentials struct {
 	Password string
 }
 
+var table *tview.Table
+
 func main() {
-	// Parse command line flags
 	username := flag.String("username", "", "API username")
 	password := flag.String("password", "", "API password")
 	flag.Parse()
 
-	// Check for required flags
 	if *username == "" || *password == "" {
 		fmt.Println("Please provide both username and password")
 		flag.PrintDefaults()
@@ -41,38 +62,44 @@ func main() {
 		Password: *password,
 	}
 
-	// Create a new application
 	app := tview.NewApplication()
+	table = tview.NewTable().SetBorders(true)
 
-	// Create a new table for displaying servers
-	table := tview.NewTable().SetBorders(true)
-	table.SetCell(0, 0, tview.NewTableCell("server_id").SetTextColor(tview.ColorYellow))
-	//table.SetCell(0, 1, tview.NewTableCell("Hostname").SetTextColor(tview.ColorYellow))
-	//table.SetCell(0, 2, tview.NewTableCell("Status").SetTextColor(tview.ColorYellow))
+	// Set up table headers
+	headers := []string{"Server ID", "Facility", "Management IP", "Hostname", "Status", "CPU", "RAM", "Storage", "OS"}
+	for i, header := range headers {
+		table.SetCell(0, i, tview.NewTableCell(header).SetTextColor(tcell.ColorYellow).SetSelectable(false))
+	}
 
-	// Fetch servers
 	servers, err := fetchServers(credentials)
 	if err != nil {
 		log.Fatalf("Error fetching servers: %v", err)
 	}
 
-	// Populate the table with server data
 	for i, server := range servers {
-		table.SetCell(i+1, 0, tview.NewTableCell(server.ID))
-		//table.SetCell(i+1, 1, tview.NewTableCell(server.Hostname))
-		//table.SetCell(i+1, 2, tview.NewTableCell(server.Status))
+		row := i + 1
+		table.SetCell(row, 0, tview.NewTableCell(server.ServerID))
+		table.SetCell(row, 1, tview.NewTableCell(server.Facility))
+		table.SetCell(row, 2, tview.NewTableCell(server.ManagementIP))
+		table.SetCell(row, 3, tview.NewTableCell(server.Package.Hostname))
+		table.SetCell(row, 4, tview.NewTableCell(server.Package.Status))
+		table.SetCell(row, 5, tview.NewTableCell(server.Package.Core))
+		table.SetCell(row, 6, tview.NewTableCell(getItemOption(server.Package.Items, "RAM")))
+		table.SetCell(row, 7, tview.NewTableCell(getItemOption(server.Package.Items, "Hard Drive")))
+		table.SetCell(row, 8, tview.NewTableCell(getItemOption(server.Package.Items, "Operating System")))
 	}
 
-	// Set up key bindings
-	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEscape {
+	table.Select(1, 0).SetFixed(1, 0).SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEscape {
 			app.Stop()
 		}
-		return event
+	}).SetSelectedFunc(func(row int, column int) {
+		if row > 0 {
+			showServerDetails(app, servers[row-1])
+		}
 	})
 
-	// Run the application
-	if err := app.SetRoot(table, true).Run(); err != nil {
+	if err := app.SetRoot(table, true).SetFocus(table).Run(); err != nil {
 		log.Fatalf("Error running application: %v", err)
 	}
 }
@@ -97,4 +124,33 @@ func fetchServers(creds Credentials) ([]Server, error) {
 	}
 
 	return servers, nil
+}
+
+func getItemOption(items []PackageItem, category string) string {
+	for _, item := range items {
+		if item.Category == category {
+			return item.Option
+		}
+	}
+	return "N/A"
+}
+
+func showServerDetails(app *tview.Application, server Server) {
+	modal := tview.NewModal().
+		SetText(fmt.Sprintf("Server ID: %s\nFacility: %s\nManagement IP: %s\nHostname: %s\nStatus: %s\nCPU: %s\nRAM: %s\nStorage: %s\nOS: %s",
+			server.ServerID,
+			server.Facility,
+			server.ManagementIP,
+			server.Package.Hostname,
+			server.Package.Status,
+			server.Package.Core,
+			getItemOption(server.Package.Items, "RAM"),
+			getItemOption(server.Package.Items, "Hard Drive"),
+			getItemOption(server.Package.Items, "Operating System"))).
+		AddButtons([]string{"OK"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			app.SetRoot(table, true)
+		})
+
+	app.SetRoot(modal, false)
 }
