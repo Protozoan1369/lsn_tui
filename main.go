@@ -50,6 +50,7 @@ var (
 	serverTable *tview.Table
 	credentials Credentials
 	servers     []Server
+	apiUrl = "https://api.dallas-idc.com/v1/server"
 )
 
 func main() {
@@ -185,7 +186,7 @@ func fetchServers() error {
 	client := resty.New()
 	resp, err := client.R().
 		SetBasicAuth(credentials.Username, credentials.Password).
-		Get("https://api.dallas-idc.com/v1/server")
+		Get(apiUrl)
 	if err != nil {
 		return fmt.Errorf("error making request: %v", err)
 	}
@@ -220,9 +221,25 @@ func getPublicIP(subnets []IPSubnet) string {
 	return "N/A"
 }
 
-func rebootServer(serverID string) {
-	// Implement reboot API call here
-	showMessage(fmt.Sprintf("Rebooting server %s", serverID))
+func rebootServer(serverID string) error {
+	client := resty.New()
+	resp, err := client.R().
+		SetBasicAuth(credentials.Username, credentials.Password).
+		Get(fmt.Sprintf("%s/%s/reboot", apiUrl, serverID))
+	if err != nil {
+		return fmt.Errorf("error making request: %v", err)
+	}
+
+	if resp.StatusCode() != 200 {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode())
+	}
+
+	err = json.Unmarshal(resp.Body(), &servers)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling response: %v", err)
+	}
+
+	return nil
 }
 
 func powerOffServer(serverID string) {
