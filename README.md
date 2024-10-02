@@ -7,4 +7,8 @@ go run main.go -username 'cwiggins@quiknode.io' -password '<super secret passwor
 
 ## TODO
 * Search feature
-* Reboot feature
+* Sort by ID
+* Refresh feature
+* Stop server
+* Start server
+* Other things from the [API](https://api.dallas-idc.com/v1/documentation)
