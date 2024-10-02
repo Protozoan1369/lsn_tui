@@ -12,6 +12,11 @@ import (
 	"github.com/rivo/tview"
 )
 
+type RebootResponse struct {
+	Status bool  `json:"status"`
+	Message string `json:"message"`
+}
+
 type IPSubnet struct {
 	Block       string `json:"block"`
 	NetworkType string `json:"network_type"`
@@ -141,9 +146,16 @@ func showServerMenu(server Server) {
 	menu.AddItem("View Details", "", 'd', func() {
 		showServerDetails(server)
 	})
-	menu.AddItem("Reboot Server", "", 'r', func() {
-		rebootServer(server.ServerID)
-	})
+    menu.AddItem("Restart Server", "", 'r', func() {
+        statusCode, rebootResp, err := rebootServer(server.ServerID)
+        if err != nil {
+            showMessage(fmt.Sprintf("Error restarting server %s: %v", server.ServerID, err))
+        } else {
+            message := fmt.Sprintf("Restart command for server %s\nStatus Code: %d\nSuccess: %t\nMessage: %s",
+                server.ServerID, statusCode, rebootResp.Status, rebootResp.Message)
+            showMessage(message)
+        }
+    })
 	menu.AddItem("Power Off Server", "", 'o', func() {
 		powerOffServer(server.ServerID)
 	})
@@ -221,25 +233,24 @@ func getPublicIP(subnets []IPSubnet) string {
 	return "N/A"
 }
 
-func rebootServer(serverID string) error {
-	client := resty.New()
-	resp, err := client.R().
-		SetBasicAuth(credentials.Username, credentials.Password).
-		Get(fmt.Sprintf("%s/%s/reboot", apiUrl, serverID))
-	if err != nil {
-		return fmt.Errorf("error making request: %v", err)
-	}
+func rebootServer(serverID string) (int, RebootResponse, error) {
+    client := resty.New()
+    resp, err := client.R().
+        SetBasicAuth(credentials.Username, credentials.Password).
+        Get(fmt.Sprintf("%s/%s/restart", apiUrl, serverID))
+    if err != nil {
+        return 0, RebootResponse{}, fmt.Errorf("error making request: %v", err)
+    }
 
-	if resp.StatusCode() != 200 {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode())
-	}
+    statusCode := resp.StatusCode()
 
-	err = json.Unmarshal(resp.Body(), &servers)
-	if err != nil {
-		return fmt.Errorf("error unmarshaling response: %v", err)
-	}
+    var rebootResp RebootResponse
+    err = json.Unmarshal(resp.Body(), &rebootResp)
+    if err != nil {
+        return statusCode, RebootResponse{}, fmt.Errorf("error unmarshaling response: %v", err)
+    }
 
-	return nil
+    return statusCode, rebootResp, nil
 }
 
 func powerOffServer(serverID string) {
@@ -253,13 +264,13 @@ func powerOnServer(serverID string) {
 }
 
 func showMessage(message string) {
-	modal := tview.NewModal().
-		SetText(message).
-		AddButtons([]string{"OK"}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			pages.SwitchToPage("serverMenu")
-		})
+    modal := tview.NewModal().
+        SetText(message).
+        AddButtons([]string{"OK"}).
+        SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+            pages.SwitchToPage("serverList")
+        })
 
-	pages.AddPage("message", modal, true, true)
-	pages.SwitchToPage("message")
+    pages.AddPage("message", modal, true, true)
+    pages.SwitchToPage("message")
 }
