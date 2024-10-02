@@ -147,14 +147,16 @@ func showServerMenu(server Server) {
 		showServerDetails(server)
 	})
     menu.AddItem("Restart Server", "", 'r', func() {
-        statusCode, rebootResp, err := rebootServer(server.ServerID)
-        if err != nil {
-            showMessage(fmt.Sprintf("Error restarting server %s: %v", server.ServerID, err))
-        } else {
-            message := fmt.Sprintf("Restart command for server %s\nStatus Code: %d\nSuccess: %t\nMessage: %s",
-                server.ServerID, statusCode, rebootResp.Status, rebootResp.Message)
-            showMessage(message)
-        }
+        showConfirmationDialog(server, func() {
+            statusCode, rebootResp, err := rebootServer(server.ServerID)
+            if err != nil {
+                showMessage(fmt.Sprintf("Error restarting server %s: %v", server.ServerID, err))
+            } else {
+                message := fmt.Sprintf("Restart command for server %s\nStatus Code: %d\nSuccess: %t\nMessage: %s",
+                    server.ServerID, statusCode, rebootResp.Status, rebootResp.Message)
+                showMessage(message)
+            }
+        })
     })
 	menu.AddItem("Power Off Server", "", 'o', func() {
 		powerOffServer(server.ServerID)
@@ -273,4 +275,20 @@ func showMessage(message string) {
 
     pages.AddPage("message", modal, true, true)
     pages.SwitchToPage("message")
+}
+
+func showConfirmationDialog(server Server, onConfirm func()) {
+    modal := tview.NewModal().
+        SetText(fmt.Sprintf("Are you sure you want to restart server %s?", server.ServerID)).
+        AddButtons([]string{"Yes", "No"}).
+        SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+            if buttonLabel == "Yes" {
+                onConfirm()
+            } else {
+                pages.SwitchToPage("serverMenu")
+            }
+        })
+
+    pages.AddPage("confirmationDialog", modal, true, true)
+    pages.SwitchToPage("confirmationDialog")
 }
