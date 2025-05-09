@@ -30,10 +30,12 @@ type Package struct {
 	Items    []PackageItem `json:"items"`
 	Name     string        `json:"name"`
 	Status   string        `json:"status"`
+	Price    int           `json:"price"`
 }
 
 type Server struct {
 	ServerID     string    `json:"server_id"`
+	IpmiIP       string    `json:"ipmi_link"`
 	Facility     string    `json:"facility"`
 	ManagementIP string    `json:"management_ip"`
 	Package      Package   `json:"package"`
@@ -182,10 +184,11 @@ func showServerDetails(server Server) {
 	details.SetBorder(true).SetTitle(fmt.Sprintf("Details: %s", server.ServerID))
 
 	fmt.Fprintf(details, "[yellow]Server ID:[white] %s\n", server.ServerID)
-	fmt.Fprintf(details, "[yellow]Hostname:[white] %s\n", server.Package.Hostname)
 	fmt.Fprintf(details, "[yellow]Facility:[white] %s\n", server.Facility)
 	fmt.Fprintf(details, "[yellow]Management IP:[white] %s\n", server.ManagementIP)
+	fmt.Fprintf(details, "[yellow]IPMI IP:[white] %s\n", server.IpmiIP)
 	fmt.Fprintf(details, "[yellow]Status:[white] %s\n", server.Package.Status)
+	fmt.Fprintf(details, "[yellow]Price:[white] $%d\n", server.Package.Price)
 	fmt.Fprintf(details, "[yellow]CPU:[white] %s\n", server.Package.Core)
 	fmt.Fprintf(details, "[yellow]RAM:[white] %s\n", getItemOption(server.Package.Items, "RAM"))
 	fmt.Fprintf(details, "[yellow]Storage:[white] %s\n", getItemOption(server.Package.Items, "Hard Drive"))
