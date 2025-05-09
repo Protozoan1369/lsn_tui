@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/go-resty/resty/v2"
@@ -71,11 +72,22 @@ func main() {
 	app = tview.NewApplication()
 	pages = tview.NewPages()
 
-	if err := fetchServers(); err != nil {
-		log.Fatalf("Error fetching servers: %v", err)
-	}
-
-	showServerList()
+	// Show loading screen
+	showLoadingScreen("Fetching servers... Please wait")
+	
+	// Start the app with loading screen
+	go func() {
+		// Fetch servers in background
+		if err := fetchServers(); err != nil {
+			app.Stop()
+			log.Fatalf("Error fetching servers: %v", err)
+		}
+		
+		// Update UI on main thread
+		app.QueueUpdateDraw(func() {
+			showServerList()
+		})
+	}()
 
 	if err := app.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
 		log.Fatalf("Error running application: %v", err)
@@ -275,4 +287,93 @@ func showConfirmationDialog(server Server, onConfirm func()) {
 
     pages.AddPage("confirmationDialog", modal, true, true)
     pages.SwitchToPage("confirmationDialog")
+}
+
+func showLoadingScreen(message string) {
+    // Create a flex layout for the loading screen
+    flex := tview.NewFlex().
+        SetDirection(tview.FlexRow)
+    
+    // Add empty space at the top (for vertical centering)
+    flex.AddItem(nil, 0, 1, false)
+    
+    // Create a text view with a loading message
+    loadingText := tview.NewTextView().
+        SetText(message).
+        SetTextAlign(tview.AlignCenter).
+        SetTextColor(tcell.ColorWhite)
+    
+    // Create a text view for the timer
+    timerText := tview.NewTextView().
+        SetTextAlign(tview.AlignCenter).
+        SetTextColor(tcell.ColorYellow)
+    
+    // Create a horizontal flex to center the message text
+    horizontalFlex := tview.NewFlex().
+        SetDirection(tview.FlexColumn)
+    
+    // Add empty space on the left (for horizontal centering)
+    horizontalFlex.AddItem(nil, 0, 1, false)
+    // Add the loading text
+    horizontalFlex.AddItem(loadingText, 30, 1, false)
+    // Add empty space on the right (for horizontal centering)
+    horizontalFlex.AddItem(nil, 0, 1, false)
+    
+    // Create a horizontal flex to center the timer text
+    timerFlex := tview.NewFlex().
+        SetDirection(tview.FlexColumn)
+    
+    // Add empty space on the left (for horizontal centering)
+    timerFlex.AddItem(nil, 0, 1, false)
+    // Add the timer text
+    timerFlex.AddItem(timerText, 30, 1, false)
+    // Add empty space on the right (for horizontal centering)
+    timerFlex.AddItem(nil, 0, 1, false)
+    
+    // Add the horizontal flexes to the main vertical flex
+    flex.AddItem(horizontalFlex, 3, 1, false)
+    flex.AddItem(timerFlex, 1, 1, false)
+    // Add empty space at the bottom (for vertical centering)
+    flex.AddItem(nil, 0, 1, false)
+    
+    // Add the flex layout to the pages
+    pages.AddPage("loading", flex, true, true)
+    pages.SwitchToPage("loading")
+    
+    // Start the timer in a separate goroutine
+    go func() {
+        startTime := time.Now()
+        ticker := time.NewTicker(100 * time.Millisecond)
+        defer ticker.Stop()
+        
+        for {
+            select {
+            case <-ticker.C:
+                elapsed := time.Since(startTime)
+                
+                // Format the elapsed time
+                var timeStr string
+                if elapsed.Minutes() < 1 {
+                    // Less than a minute - show seconds
+                    timeStr = fmt.Sprintf("Elapsed: %.1f seconds", elapsed.Seconds())
+                } else {
+                    // One minute or more - show minutes and seconds
+                    minutes := int(elapsed.Minutes())
+                    seconds := int(elapsed.Seconds()) % 60
+                    timeStr = fmt.Sprintf("Elapsed: %d min %d sec", minutes, seconds)
+                }
+                
+                // Update the timer text
+                app.QueueUpdateDraw(func() {
+                    timerText.SetText(timeStr)
+                })
+                
+                // Check if we're no longer on the loading page
+                currentPage, _ := pages.GetFrontPage()
+                if currentPage != "loading" {
+                    return
+                }
+            }
+        }
+    }()
 }
