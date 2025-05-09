@@ -17,11 +17,6 @@ type RebootResponse struct {
 	Message string `json:"message"`
 }
 
-type IPSubnet struct {
-	Block       string `json:"block"`
-	NetworkType string `json:"network_type"`
-}
-
 type PackageItem struct {
 	Category string `json:"category"`
 	Option   string `json:"option"`
@@ -39,7 +34,6 @@ type Package struct {
 type Server struct {
 	ServerID     string    `json:"server_id"`
 	Facility     string    `json:"facility"`
-	IPSubnets    []IPSubnet `json:"ip_subnets"`
 	ManagementIP string    `json:"management_ip"`
 	Package      Package   `json:"package"`
 }
@@ -116,10 +110,9 @@ func showServerList() {
 
 	// Add server data
 	for i, server := range servers {
-		publicIP := getPublicIP(server.IPSubnets)
 		serverTable.SetCell(i+1, 0, tview.NewTableCell(server.ServerID))
 		serverTable.SetCell(i+1, 1, tview.NewTableCell(server.Package.Name))
-		serverTable.SetCell(i+1, 2, tview.NewTableCell(publicIP))
+		serverTable.SetCell(i+1, 2, tview.NewTableCell(server.ManagementIP))
 	}
 
 	serverTable.Select(1, 0).SetFixed(1, 0).SetDoneFunc(func(key tcell.Key) {
@@ -221,15 +214,6 @@ func getItemOption(items []PackageItem, category string) string {
 	for _, item := range items {
 		if item.Category == category {
 			return item.Option
-		}
-	}
-	return "N/A"
-}
-
-func getPublicIP(subnets []IPSubnet) string {
-	for _, subnet := range subnets {
-		if subnet.NetworkType == "public" {
-			return subnet.Block
 		}
 	}
 	return "N/A"
